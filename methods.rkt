@@ -3,6 +3,9 @@
          racket/contract/base
          racket/exn
          racket/match
+         racket/port
+         racket/system
+         net/url
          "error-codes.rkt"
          "msg-io.rkt"
          "responses.rkt"
@@ -88,6 +91,10 @@
        (text-document/range-formatting! id params)]
       ["textDocument/onTypeFormatting"
        (text-document/on-type-formatting! id params)]
+      ["textDocument/codeLens"
+       (text-document/code-lens id params)]
+      ["workspace/executeCommand"
+       (execute-command id params)]
       [_
        (eprintf "invalid request for method ~v\n" method)
        (define err (format "The method ~v was not found" method))
@@ -141,6 +148,8 @@
                'documentSymbolProvider #t
                'documentFormattingProvider #t
                'documentRangeFormattingProvider #t
+               'codeLensProvider (hasheq)
+               'executeCommandProvider (hasheq 'commands (list "racket"))
                'documentOnTypeFormattingProvider (hasheq 'firstTriggerCharacter ")" 'moreTriggerCharacter (list "\n" "]"))))
 
      (define resp (success-response id (hasheq 'capabilities server-capabilities)))
@@ -152,6 +161,21 @@
 (define (shutdown id)
   (set! already-shutdown? #t)
   (success-response id (json-null)))
+
+(define (execute-command id params)
+  ; technically we could run using `enter!`, but not sure how safe that is.
+  ; run as a subprocess, and send all output as the result.
+  (match params
+    [(hash-table ('arguments (list uri))
+                 ('command _)
+                 ('workDoneToken _))
+     (let ([result (with-output-to-string
+                     (lambda ()
+                       (system* (find-system-path 'exec-file)
+                                (url->path (string->url uri)))))])
+       (success-response id (hasheq 'result result)))]
+    [_
+     (error-response id INVALID-PARAMS (format "unexpected params: ~v" params))]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

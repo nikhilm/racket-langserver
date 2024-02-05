@@ -18,7 +18,8 @@
          "docs-helpers.rkt"
          "documentation-parser.rkt"
          "doc.rkt"
-         "struct.rkt")
+         "struct.rkt"
+         "debug.rkt")
 
 ;;
 ;; Match Expanders
@@ -478,6 +479,22 @@
     [_
      (error-response id INVALID-PARAMS "textDocument/onTypeFormatting failed")]))
 
+;; Code Lens request
+(define (code-lens id params)
+  (match params
+    [(hash-table ['textDocument (DocIdentifier #:uri uri)])
+
+     (define this-doc (hash-ref open-docs (string->symbol uri)))
+
+     (define-values (st-ln st-ch) (doc-line/ch this-doc 0))
+     (success-response id (list (CodeLens #:range (start/end->range this-doc
+                                                                    (doc-line-start-pos this-doc 0)
+                                                                    (doc-line-end-pos this-doc 0))
+                                          #:command (hasheq 'title "Run Module" 'command "racket"
+                                                            'arguments (list uri)))))]
+    [_
+     (error-response id INVALID-PARAMS "textDocument/formatting failed")]))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide
@@ -498,4 +515,5 @@
   [prepareRename (exact-nonnegative-integer? jsexpr? . -> . jsexpr?)]
   [formatting! (exact-nonnegative-integer? jsexpr? . -> . jsexpr?)]
   [range-formatting! (exact-nonnegative-integer? jsexpr? . -> . jsexpr?)]
-  [on-type-formatting! (exact-nonnegative-integer? jsexpr? . -> . jsexpr?)]))
+  [on-type-formatting! (exact-nonnegative-integer? jsexpr? . -> . jsexpr?)]
+  [code-lens (exact-nonnegative-integer? jsexpr? . -> . jsexpr?)]))

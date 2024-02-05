@@ -12,6 +12,7 @@
          Diagnostic
          Pos
          Range
+         CodeLens
          abs-pos->Pos)
 
 (define-json-expander WorkspaceEdit
@@ -25,6 +26,9 @@
   [diagnostics any/c]
   [isPreferred boolean?]
   [edit any/c])
+(define-json-expander CodeLens
+  [range any/c]
+  [command any/c])
 
 (define-json-expander Diagnostic
   [range any/c]

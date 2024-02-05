@@ -2,7 +2,7 @@
 (require racket/file
          racket/runtime-path)
 
-(define debug? #f)
+(define debug? #t)
 
 (define-runtime-path df "debug.out.rkt")
 (define (maybe-debug-file t)
